@@ -52,6 +52,7 @@ this vignette I will be presenting the use of `schex` for `Seurat` objects.
 Prerequisites to install that are not available via `install.packages`: 
 
 * [schex](https://github.com/SaskiaFreytag/schex)
+* [SingleCellExperiment - development version](https://bioconductor.org/packages/devel/bioc/html/SingleCellExperiment.html)
 * [SeuratData](https://github.com/satijalab/seurat-data) 
 
 ```{r load-libraries, message=FALSE, warning=FALSE}
@@ -151,7 +152,7 @@ hexagon cell representation.
 
 ```{r plot-gene}
 gene_id <-"CD19"
-plot_hexbin_gene(pbmc, type="logcounts", gene=gene_id, 
+schex::plot_hexbin_gene(pbmc, type="data", gene=gene_id, 
                  action="mean", xlab="UMAP1", ylab="UMAP2", 
                  title=paste0("Mean of ", gene_id))
 ```

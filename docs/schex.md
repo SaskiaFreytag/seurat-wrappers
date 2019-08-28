@@ -1,6 +1,6 @@
 Using schex with Seurat
 ================
-Compiled: August 07, 2019
+Compiled: August 28, 2019
 
 This vigettte demonstrates how to run schex on Seurat objects, which aims to provide better plots. If you use schex, please cite:
 
@@ -20,6 +20,7 @@ Load libraries
 Prerequisites to install that are not available via `install.packages`:
 
 -   [schex](https://github.com/SaskiaFreytag/schex)
+-   [SingleCellExperiment - development version](https://bioconductor.org/packages/devel/bioc/html/SingleCellExperiment.html)
 -   [SeuratData](https://github.com/satijalab/seurat-data)
 
 ``` r
@@ -27,6 +28,7 @@ library(Seurat)
 library(SeuratData)
 library(ggplot2)
 library(ggrepel)
+library(dplyr)
 theme_set(theme_classic())
 library(schex)
 ```
@@ -41,66 +43,16 @@ InstallData("pbmc3k")
 pbmc <- pbmc3k
 ```
 
-In the next few sections, I will perform some simple quality control steps outlined in the [Seurat vignette](https://satijalab.org/seurat/v3.0/pbmc3k_tutorial.html). I will then calculate various dimension reductions and cluster the data, as also outlined in the vignette.
+In the next section, I will perform some simple quality control steps outlined in the [Seurat vignette](https://satijalab.org/seurat/v3.0/pbmc3k_tutorial.html). I will then calculate various dimension reductions and cluster the data, as also outlined in the vignette.
 
 Standard pre-processing workflow
 --------------------------------
 
-### Filtering
-
-Cells with high mitochondrial content as well as cells with too low or too high feature count are filtered.
-
 ``` r
 pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
-pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
-```
-
-### Normalization
-
-Next a global-scaling normalization method is employed to normalizes the feature expression measurements for each cell.
-
-``` r
-pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000, verbose = FALSE)
-```
-
-### Identification of highly variable genes
-
-Many of the downstream methods are based on only the highly variable genes, hence we require their identification.
-
-``` r
-pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
-```
-
-### Scaling
-
-Prior to dimension reduction the data is scaled.
-
-``` r
-all.genes <- rownames(pbmc)
-pbmc <- ScaleData(pbmc, features = all.genes, verbose = FALSE)
-```
-
-### Perform dimensionality reductions
-
-First a PCA is applied to the data. Using the PCA you will have to decide on the dimensionality of the data. Here the dimensionality was decided to be 10. Please refer to the original Seurat vignette for methods on how this is assessed.
-
-``` r
-pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc), verbose = FALSE)
-```
-
-Next a UMAP dimensionality reduction is also run.
-
-``` r
-pbmc <- RunUMAP(pbmc, dims = 1:10, verbose = FALSE)
-```
-
-### Clustering
-
-Finally the data is clustered.
-
-``` r
-pbmc <- FindNeighbors(pbmc, dims = 1:10, verbose = FALSE)
-pbmc <- FindClusters(pbmc, resolution = 0.5, verbose = FALSE)
+pbmc <- pbmc %>% subset(subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5) %>% 
+    NormalizeData() %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA(verbose = FALSE) %>% RunUMAP(dims = 1:10) %>% 
+    FindNeighbors(dims = 1:10) %>% FindClusters(resolution = 0.5, verbose = FALSE)
 ```
 
 Plotting single cell data
@@ -159,7 +111,7 @@ Finally, I will visualize the gene expression of the CD19 gene in the hexagon ce
 
 ``` r
 gene_id <- "CD19"
-plot_hexbin_gene(pbmc, type = "logcounts", gene = gene_id, action = "mean", xlab = "UMAP1", ylab = "UMAP2", 
+schex::plot_hexbin_gene(pbmc, type = "data", gene = gene_id, action = "mean", xlab = "UMAP1", ylab = "UMAP2", 
     title = paste0("Mean of ", gene_id))
 ```
 
